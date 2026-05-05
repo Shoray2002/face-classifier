@@ -34,10 +34,14 @@ export function classifyAndColor(
         }
       }
 
-      let r: number, g: number, bl: number;
+      let r: number;
+      let g: number;
+      let b_: number;
 
       if (isClipped) {
-        r = 0.42; g = 0.42; bl = 0.48;
+        r = 0.42;
+        g = 0.42;
+        b_ = 0.48;
         clipped++;
       } else {
         const edge1 = b.clone().sub(a);
@@ -45,16 +49,20 @@ export function classifyAndColor(
         const normal = edge1.cross(edge2).normalize();
         const viewDir = centroid.clone().sub(camera.position).normalize();
         if (normal.dot(viewDir) < 0) {
-          r = 0.30; g = 0.85; bl = 0.42;
+          r = 0.30;
+          g = 0.85;
+          b_ = 0.42;
           front++;
         } else {
-          r = 0.32; g = 0.62; bl = 0.95;
+          r = 0.32;
+          g = 0.62;
+          b_ = 0.95;
           back++;
         }
       }
-      colors.setXYZ(i0, r, g, bl);
-      colors.setXYZ(i1, r, g, bl);
-      colors.setXYZ(i2, r, g, bl);
+      colors.setXYZ(i0, r, g, b_);
+      colors.setXYZ(i1, r, g, b_);
+      colors.setXYZ(i2, r, g, b_);
     }
 
     colors.needsUpdate = true;

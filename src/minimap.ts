@@ -12,6 +12,7 @@ export function createMinimap() {
   const sun = new THREE.DirectionalLight(0xffffff, 0.85);
   sun.position.set(3, 4, 5);
   scene.add(sun);
+
   scene.add(new THREE.AxesHelper(1.5));
 
   const outerMaterial = new THREE.MeshLambertMaterial({
@@ -23,9 +24,6 @@ export function createMinimap() {
   });
   const innerMaterial = new THREE.MeshLambertMaterial({ color: 0xff944a });
 
-  const shapeGroup = new THREE.Group();
-  scene.add(shapeGroup);
-
   const slabGeometry = new THREE.PlaneGeometry(2.6, 2.6);
   const slabMaterial = new THREE.MeshBasicMaterial({
     color: 0x66ccff,
@@ -34,6 +32,10 @@ export function createMinimap() {
     side: THREE.DoubleSide,
     depthWrite: false,
   });
+
+  const shapeGroup = new THREE.Group();
+  scene.add(shapeGroup);
+
   const slabGroup = new THREE.Group();
   scene.add(slabGroup);
 
@@ -55,8 +57,7 @@ export function createMinimap() {
     },
 
     update(
-      viewDir: THREE.Vector3,
-      planes: { position: number }[],
+      planes: { position: number; normal: THREE.Vector3 }[],
       camPos: THREE.Vector3,
     ) {
       while (slabGroup.children.length < planes.length) {
@@ -66,20 +67,22 @@ export function createMinimap() {
         slabGroup.remove(slabGroup.children[slabGroup.children.length - 1]);
       }
 
-      const orient = new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, 0, 1),
-        viewDir,
-      );
+      const z = new THREE.Vector3(0, 0, 1);
       for (let i = 0; i < planes.length; i++) {
+        const p = planes[i];
         const quad = slabGroup.children[i];
-        quad.position.copy(viewDir).multiplyScalar(planes[i].position);
-        quad.quaternion.copy(orient);
+        quad.position.copy(p.normal).multiplyScalar(p.position);
+        quad.quaternion.setFromUnitVectors(z, p.normal);
       }
-
-      camDot.position.copy(camPos).normalize().multiplyScalar(2.0);
+      camDot.position.copy(camPos).normalize().multiplyScalar(2);
     },
 
-    renderInto(renderer: THREE.WebGLRenderer, x: number, y: number, size: number) {
+    renderInto(
+      renderer: THREE.WebGLRenderer,
+      x: number,
+      y: number,
+      size: number,
+    ) {
       renderer.setScissorTest(true);
       renderer.setViewport(x, y, size, size);
       renderer.setScissor(x, y, size, size);
