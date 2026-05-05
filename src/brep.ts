@@ -1,6 +1,6 @@
 import * as THREE from "three";
 export function buildShell() {
-  const g = new THREE.SphereGeometry(1, 32, 16).toNonIndexed();
+  const g = new THREE.SphereGeometry(1, 64, 64).toNonIndexed();
   addVertexColors(g);
   return g;
 }
