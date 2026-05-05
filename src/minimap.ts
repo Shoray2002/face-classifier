@@ -1,9 +1,6 @@
 import * as THREE from "three";
 
-export function createMinimap(
-  shell: THREE.BufferGeometry,
-  prism: THREE.BufferGeometry,
-) {
+export function createMinimap() {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0e0e18);
 
@@ -17,21 +14,17 @@ export function createMinimap(
   scene.add(sun);
   scene.add(new THREE.AxesHelper(1.5));
 
-  scene.add(new THREE.Mesh(
-    shell,
-    new THREE.MeshLambertMaterial({
-      color: 0x4d8bd1,
-      transparent: true,
-      opacity: 0.22,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    }),
-  ));
+  const outerMaterial = new THREE.MeshLambertMaterial({
+    color: 0x4d8bd1,
+    transparent: true,
+    opacity: 0.22,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  const innerMaterial = new THREE.MeshLambertMaterial({ color: 0xff944a });
 
-  scene.add(new THREE.Mesh(
-    prism,
-    new THREE.MeshLambertMaterial({ color: 0xff944a }),
-  ));
+  const shapeGroup = new THREE.Group();
+  scene.add(shapeGroup);
 
   const slabGeometry = new THREE.PlaneGeometry(2.6, 2.6);
   const slabMaterial = new THREE.MeshBasicMaterial({
@@ -43,6 +36,7 @@ export function createMinimap(
   });
   const slabGroup = new THREE.Group();
   scene.add(slabGroup);
+
   const camDot = new THREE.Mesh(
     new THREE.SphereGeometry(0.09, 16, 12),
     new THREE.MeshBasicMaterial({ color: 0xffd166 }),
@@ -50,12 +44,21 @@ export function createMinimap(
   scene.add(camDot);
 
   return {
+    setGeometries(outer: THREE.BufferGeometry, inner?: THREE.BufferGeometry) {
+      while (shapeGroup.children.length) {
+        shapeGroup.remove(shapeGroup.children[0]);
+      }
+      shapeGroup.add(new THREE.Mesh(outer, outerMaterial));
+      if (inner) {
+        shapeGroup.add(new THREE.Mesh(inner, innerMaterial));
+      }
+    },
+
     update(
       viewDir: THREE.Vector3,
       planes: { position: number }[],
       camPos: THREE.Vector3,
     ) {
-      // Match quad count to plane count.
       while (slabGroup.children.length < planes.length) {
         slabGroup.add(new THREE.Mesh(slabGeometry, slabMaterial));
       }
@@ -63,7 +66,6 @@ export function createMinimap(
         slabGroup.remove(slabGroup.children[slabGroup.children.length - 1]);
       }
 
-      // Each quad sits perpendicular to viewDir at its slider offset.
       const orient = new THREE.Quaternion().setFromUnitVectors(
         new THREE.Vector3(0, 0, 1),
         viewDir,
@@ -74,7 +76,6 @@ export function createMinimap(
         quad.quaternion.copy(orient);
       }
 
-      // Pin the camera dot onto a fixed-radius sphere so it always shows up.
       camDot.position.copy(camPos).normalize().multiplyScalar(2.0);
     },
 

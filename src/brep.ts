@@ -1,4 +1,5 @@
 import * as THREE from "three";
+
 export function buildShell() {
   const g = new THREE.SphereGeometry(1, 64, 64).toNonIndexed();
   addVertexColors(g);
@@ -12,7 +13,7 @@ export function buildPrism() {
   return g;
 }
 
-function addVertexColors(g: THREE.BufferGeometry) {
+export function addVertexColors(g: THREE.BufferGeometry) {
   const vertexCount = g.getAttribute("position").count;
   const colors = new Float32Array(vertexCount * 3);
   g.setAttribute("color", new THREE.BufferAttribute(colors, 3));

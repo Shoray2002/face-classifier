@@ -1,7 +1,8 @@
 import "./style.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { buildShell, buildPrism } from "./brep";
+import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
+import { buildShell, buildPrism, addVertexColors } from "./brep";
 import { classifyAndColor } from "./classify";
 import { createMinimap } from "./minimap";
 
@@ -32,12 +33,7 @@ const keyLight = new THREE.DirectionalLight(0xffffff, 1);
 keyLight.position.copy(camera.position);
 scene.add(keyLight);
 
-const shell = buildShell();
-const prism = buildPrism();
-const geometries = [shell, prism];
 const clippingPlanes: THREE.Plane[] = [];
-const minimap = createMinimap(shell, prism);
-
 const sharedMaterialOptions: THREE.MeshStandardMaterialParameters = {
   vertexColors: true,
   side: THREE.DoubleSide,
@@ -46,12 +42,60 @@ const sharedMaterialOptions: THREE.MeshStandardMaterialParameters = {
   roughness: 0.7,
 };
 
-scene.add(
-  new THREE.Mesh(shell, new THREE.MeshStandardMaterial(sharedMaterialOptions)),
-);
-scene.add(
-  new THREE.Mesh(prism, new THREE.MeshStandardMaterial(sharedMaterialOptions)),
-);
+const minimap = createMinimap();
+
+let geometries: THREE.BufferGeometry[] = [];
+let meshes: THREE.Mesh[] = [];
+
+function setShape(list: THREE.BufferGeometry[]) {
+  for (const m of meshes) {
+    scene.remove(m);
+    (m.material as THREE.Material).dispose();
+  }
+  for (const old of geometries) old.dispose();
+  meshes = [];
+  geometries = list;
+
+  for (const g of geometries) {
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial(sharedMaterialOptions));
+    scene.add(m);
+    meshes.push(m);
+  }
+  minimap.setGeometries(geometries[0], geometries[1]);
+}
+
+function loadDefault() {
+  setShape([buildShell(), buildPrism()]);
+}
+
+function loadSTL(buffer: ArrayBuffer) {
+  const raw = new STLLoader().parse(buffer);
+  raw.computeBoundingSphere();
+  const sphere = raw.boundingSphere!;
+  raw.translate(-sphere.center.x, -sphere.center.y, -sphere.center.z);
+  const s = 0.9 / sphere.radius;
+  raw.scale(s, s, s);
+
+  const g = raw.index ? raw.toNonIndexed() : raw;
+  addVertexColors(g);
+  setShape([g]);
+}
+
+loadDefault();
+
+const fileInput = document.querySelector<HTMLInputElement>("#stl-upload")!;
+fileInput.addEventListener("change", async () => {
+  const file = fileInput.files?.[0];
+  if (!file) return;
+  const buffer = await file.arrayBuffer();
+  loadSTL(buffer);
+});
+
+const resetBtn = document.querySelector<HTMLButtonElement>("#reset-model")!;
+resetBtn.addEventListener("click", () => {
+  fileInput.value = "";
+  loadDefault();
+});
 
 const planes: { position: number; threePlane: THREE.Plane }[] = [];
 const MAX_PLANES = 6;
