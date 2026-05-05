@@ -1,16 +1,30 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visible-face classifier</title>
+  </head>
+  <body>
+    <div id="app"></div>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Threejs Template</title>
-  <link rel="stylesheet" href="./style.css">
-</head>
+    <div id="panel">
+      <div class="row title">Visible-face classifier</div>
 
-<body>
-  <canvas id="canvas"></canvas>
-  <script type="module" src="/main.js"></script>
-</body>
+      <div class="row planes-header">
+        <strong>Section planes</strong>
+        <button id="add-plane" title="Add a plane">+ Add plane</button>
+      </div>
+      <div id="planes"></div>
 
+      <div class="row legend">
+        <span><span class="dot front"></span>front (outer)</span>
+        <span><span class="dot back"></span>back (inner)</span>
+        <span><span class="dot clp"></span>clipped</span>
+      </div>
+      <div id="status"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>
