@@ -5,6 +5,11 @@ import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { buildShell, buildPrism, addVertexColors } from "./brep";
 import { classifyAndColor } from "./classify";
 import { createMinimap } from "./minimap";
+const SHOW_CLIPPED = false;
+
+if (!SHOW_CLIPPED) {
+  document.querySelector<HTMLSpanElement>(".dot.clp")?.parentElement?.remove();
+}
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x14141c);
@@ -165,9 +170,11 @@ function tick() {
     const point = viewDir.clone().multiplyScalar(p.position);
     p.threePlane.setFromNormalAndCoplanarPoint(viewDir, point);
   }
-  const result = classifyAndColor(geometries, camera, clippingPlanes);
-  const total = result.front + result.back + result.clipped;
-  statusEl.textContent = `front: ${result.front}   back: ${result.back}   clipped: ${result.clipped}   (total ${total})`;
+  const result = classifyAndColor(geometries, camera, clippingPlanes, SHOW_CLIPPED);
+  const total = result.front + result.back + (SHOW_CLIPPED ? result.clipped : 0);
+  statusEl.textContent = SHOW_CLIPPED
+    ? `front: ${result.front}   back: ${result.back}   clipped: ${result.clipped}   (total ${total})`
+    : `front: ${result.front}   back: ${result.back}   (total ${total})`;
   const w = window.innerWidth;
   const h = window.innerHeight;
   renderer.setViewport(0, 0, w, h);

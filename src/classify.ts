@@ -3,6 +3,7 @@ export function classifyAndColor(
   geometries: THREE.BufferGeometry[],
   camera: THREE.Camera,
   clipPlanes: THREE.Plane[],
+  showClipped: boolean,
 ) {
   let front = 0;
   let back = 0;
@@ -24,10 +25,12 @@ export function classifyAndColor(
 
       const centroid = a.clone().add(b).add(c).divideScalar(3);
       let isClipped = false;
-      for (const plane of clipPlanes) {
-        if (plane.distanceToPoint(centroid) < 0) {
-          isClipped = true;
-          break;
+      if (showClipped) {
+        for (const plane of clipPlanes) {
+          if (plane.distanceToPoint(centroid) < 0) {
+            isClipped = true;
+            break;
+          }
         }
       }
 
