@@ -243,6 +243,7 @@ html, body {
   font-size: 11px;
   opacity: 0.85;
   margin-top: 6px;
+  white-space: pre-line;
 }
 
 #minimap-label {

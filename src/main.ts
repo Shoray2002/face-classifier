@@ -79,9 +79,12 @@ function setShape(newGeometries: THREE.BufferGeometry[]) {
 function loadDefault() {
   const shell = new THREE.SphereGeometry(1, 64, 64).toNonIndexed();
   addVertexColors(shell);
+  shell.userData.faceLabels = Array(shell.getAttribute("position").count / 3).fill("sphere");
+
   const prism = new THREE.BoxGeometry(0.55, 0.55, 0.55).toNonIndexed();
-  prism.translate(0.18, -0.08, 0.04);
+  prism.translate(0.18, -0.8, 0.04);
   addVertexColors(prism);
+  prism.userData.faceLabels = ["+X", "+X", "-X", "-X", "+Y", "+Y", "-Y", "-Y", "+Z", "+Z", "-Z", "-Z"];
 
   setShape([shell, prism]);
 }
@@ -108,6 +111,7 @@ fileInput.addEventListener("change", async () => {
   geometry.scale(scale, scale, scale);
   const finalGeometry = geometry.index ? geometry.toNonIndexed() : geometry;
   addVertexColors(finalGeometry);
+  finalGeometry.userData.faceLabels = Array(finalGeometry.getAttribute("position").count / 3).fill("model");
   setShape([finalGeometry]);
 });
 
@@ -290,14 +294,15 @@ function tick() {
   }
 
   const result = classifyAndColor(geometries, camera, clippingPlanes, SHOW_CLIPPED);
-  const total = result.front + result.back + (SHOW_CLIPPED ? result.clipped : 0);
-  if (SHOW_CLIPPED) {
-    statusEl.textContent =
-      `front: ${result.front}   back: ${result.back}   ` +
-      `clipped: ${result.clipped}   (total ${total})`;
-  } else {
-    statusEl.textContent = `front: ${result.front}   back: ${result.back}   (total ${total})`;
+  const lines = [
+    SHOW_CLIPPED
+      ? `total — front: ${result.front}  back: ${result.back}  clipped: ${result.clipped}`
+      : `total — front: ${result.front}  back: ${result.back}`,
+  ];
+  for (const [name, c] of Object.entries(result.faces)) {
+    lines.push(`  ${name}: ${c.front} / ${c.back}`);
   }
+  statusEl.textContent = lines.join("\n");
 
   const w = window.innerWidth;
   const h = window.innerHeight;
