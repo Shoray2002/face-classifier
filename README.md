@@ -1,4 +1,5 @@
 # Face classifier
+[try it here](https://face-classifier.surge.sh/)
 
 ## Run
 
@@ -28,3 +29,5 @@ npm run preview
 - Drag the camera with the mouse (left-drag rotates, scroll zooms).
 
 A minimap in the bottom-right shows where every plane sits in world space and where your camera is.
+
+
