@@ -1,80 +1,79 @@
 import * as THREE from "three";
+
+const idMaterial = new THREE.MeshBasicMaterial({
+  vertexColors: true,
+  side: THREE.DoubleSide,
+  toneMapped: false,
+});
+
+const renderTarget = new THREE.WebGLRenderTarget(1, 1);
+
+let targetW = 0;
+let targetH = 0;
+let pixels = new Uint8Array(0);
+
 export function classifyAndColor(
   geometries: THREE.BufferGeometry[],
   camera: THREE.Camera,
-  clipPlanes: THREE.Plane[],
-  showClipped: boolean,
+  scene: THREE.Scene,
+  renderer: THREE.WebGLRenderer,
+  clippingPlanes: THREE.Plane[],
 ) {
-  let front = 0;
-  let back = 0;
-  let clipped = 0;
-  const faces: Record<string, { front: number; back: number; clipped: number }> = {};
-
-  for (const geometry of geometries) {
-    const positions = geometry.getAttribute("position");
-    const colors = geometry.getAttribute("color");
-    const triangleCount = positions.count / 3;
-    const labels = geometry.userData.faceLabels as string[] | undefined;
-
-    for (let t = 0; t < triangleCount; t++) {
-      const i0 = t * 3;
-      const i1 = t * 3 + 1;
-      const i2 = t * 3 + 2;
-
-      const a = new THREE.Vector3().fromBufferAttribute(positions, i0);
-      const b = new THREE.Vector3().fromBufferAttribute(positions, i1);
-      const c = new THREE.Vector3().fromBufferAttribute(positions, i2);
-
-      const centroid = a.clone().add(b).add(c).divideScalar(3);
-      let isClipped = false;
-      if (showClipped) {
-        for (const plane of clipPlanes) {
-          if (plane.distanceToPoint(centroid) < 0) {
-            isClipped = true;
-            break;
-          }
-        }
-      }
-
-      const label = labels?.[t] ?? "mesh";
-      const face = faces[label] ?? (faces[label] = { front: 0, back: 0, clipped: 0 });
-
-      let r: number;
-      let g: number;
-      let b_: number;
-
-      if (isClipped) {
-        r = 0.42;
-        g = 0.42;
-        b_ = 0.48;
-        clipped++;
-        face.clipped++;
-      } else {
-        const edge1 = b.clone().sub(a);
-        const edge2 = c.clone().sub(a);
-        const normal = edge1.cross(edge2).normalize();
-        const viewDir = centroid.clone().sub(camera.position).normalize();
-        if (normal.dot(viewDir) < 0) {
-          r = 0.30;
-          g = 0.85;
-          b_ = 0.42;
-          front++;
-          face.front++;
-        } else {
-          r = 0.32;
-          g = 0.62;
-          b_ = 0.95;
-          back++;
-          face.back++;
-        }
-      }
-      colors.setXYZ(i0, r, g, b_);
-      colors.setXYZ(i1, r, g, b_);
-      colors.setXYZ(i2, r, g, b_);
-    }
-
-    colors.needsUpdate = true;
+  const w = renderer.domElement.width;
+  const h = renderer.domElement.height;
+  if (w !== targetW || h !== targetH) {
+    renderTarget.setSize(w, h);
+    pixels = new Uint8Array(w * h * 4);
+    targetW = w;
+    targetH = h;
   }
 
-  return { front, back, clipped, faces };
+  for (const g of geometries) {
+    const colorAttr = g.getAttribute("color");
+    (colorAttr.array as Float32Array).set(g.userData.idColors as Float32Array);
+    colorAttr.needsUpdate = true;
+  }
+
+  idMaterial.clippingPlanes = clippingPlanes;
+  scene.overrideMaterial = idMaterial;
+  const prevBg = scene.background;
+  scene.background = null;
+  renderer.setClearColor(0x000000, 0);
+  renderer.setRenderTarget(renderTarget);
+  renderer.clear();
+  renderer.render(scene, camera);
+  renderer.setRenderTarget(null);
+  scene.overrideMaterial = null;
+  scene.background = prevBg;
+
+  renderer.readRenderTargetPixels(renderTarget, 0, 0, w, h, pixels);
+  const visibleIds = new Set<number>();
+  for (let i = 0; i < pixels.length; i += 4) {
+    if (pixels[i + 3] === 0) continue; // background pixel
+    const id = pixels[i] | (pixels[i + 1] << 8) | (pixels[i + 2] << 16);
+    visibleIds.add(id);
+  }
+
+  let visible = 0;
+  let hidden = 0;
+  for (const g of geometries) {
+    const idStart = g.userData.idStart as number;
+    const triCount = g.getAttribute("position").count / 3;
+    const colors = g.getAttribute("color").array as Float32Array;
+    for (let t = 0; t < triCount; t++) {
+      const seen = visibleIds.has(idStart + t);
+      if (seen) visible++;
+      else hidden++;
+      const r = seen ? 0.30 : 0.32;
+      const gg = seen ? 0.85 : 0.62;
+      const b = seen ? 0.42 : 0.95;
+      const o = t * 9;
+      colors[o + 0] = r; colors[o + 1] = gg; colors[o + 2] = b;
+      colors[o + 3] = r; colors[o + 4] = gg; colors[o + 5] = b;
+      colors[o + 6] = r; colors[o + 7] = gg; colors[o + 8] = b;
+    }
+    g.getAttribute("color").needsUpdate = true;
+  }
+
+  return { visible, hidden };
 }

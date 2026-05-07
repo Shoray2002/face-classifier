@@ -4,11 +4,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { classifyAndColor } from "./classify";
 import { createMinimap } from "./minimap";
-const SHOW_CLIPPED = false;
 
-if (!SHOW_CLIPPED) {
-  document.querySelector(".dot.clp")?.parentElement?.remove();
-}
+document.querySelector(".dot.clp")?.parentElement?.remove();
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x14141c);
@@ -66,6 +63,26 @@ function setShape(newGeometries: THREE.BufferGeometry[]) {
   }
   geometries = newGeometries;
   meshes = [];
+
+  let idCounter = 0;
+  for (const g of geometries) {
+    const triCount = g.getAttribute("position").count / 3;
+    g.userData.idStart = idCounter;
+    const idColors = new Float32Array(g.getAttribute("position").count * 3);
+    for (let t = 0; t < triCount; t++) {
+      const id = idCounter + t;
+      const r = (id & 0xff) / 255;
+      const gv = ((id >> 8) & 0xff) / 255;
+      const b = ((id >> 16) & 0xff) / 255;
+      const o = t * 9;
+      idColors[o + 0] = r; idColors[o + 1] = gv; idColors[o + 2] = b;
+      idColors[o + 3] = r; idColors[o + 4] = gv; idColors[o + 5] = b;
+      idColors[o + 6] = r; idColors[o + 7] = gv; idColors[o + 8] = b;
+    }
+    g.userData.idColors = idColors;
+    idCounter += triCount;
+  }
+
   for (const g of geometries) {
     const material = new THREE.MeshStandardMaterial(materialOptions);
     const mesh = new THREE.Mesh(g, material);
@@ -293,16 +310,9 @@ function tick() {
     p.threePlane.setFromNormalAndCoplanarPoint(p.normal, point);
   }
 
-  const result = classifyAndColor(geometries, camera, clippingPlanes, SHOW_CLIPPED);
-  const lines = [
-    SHOW_CLIPPED
-      ? `total — front: ${result.front}  back: ${result.back}  clipped: ${result.clipped}`
-      : `total — front: ${result.front}  back: ${result.back}`,
-  ];
-  for (const [name, c] of Object.entries(result.faces)) {
-    lines.push(`  ${name}: ${c.front} / ${c.back}`);
-  }
-  statusEl.textContent = lines.join("\n");
+  const result = classifyAndColor(geometries, camera, scene, renderer, clippingPlanes);
+  const total = result.visible + result.hidden;
+  statusEl.textContent = `visible: ${result.visible}   hidden: ${result.hidden}   (total ${total})`;
 
   const w = window.innerWidth;
   const h = window.innerHeight;
