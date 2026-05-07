@@ -73,12 +73,12 @@ export function classifyAndColor(
       if (seen) visible++;
       else hidden++;
       const r = seen ? 0.30 : 0.32;
-      const gg = seen ? 0.85 : 0.62;
+      const g = seen ? 0.85 : 0.62;
       const b = seen ? 0.42 : 0.95;
       const o = t * 9;
-      colors[o + 0] = r; colors[o + 1] = gg; colors[o + 2] = b;
-      colors[o + 3] = r; colors[o + 4] = gg; colors[o + 5] = b;
-      colors[o + 6] = r; colors[o + 7] = gg; colors[o + 8] = b;
+      colors[o + 0] = r; colors[o + 1] = g; colors[o + 2] = b;
+      colors[o + 3] = r; colors[o + 4] = g; colors[o + 5] = b;
+      colors[o + 6] = r; colors[o + 7] = g; colors[o + 8] = b;
     }
     g.getAttribute("color").needsUpdate = true;
   }

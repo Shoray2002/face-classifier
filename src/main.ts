@@ -72,12 +72,12 @@ function setShape(newGeometries: THREE.BufferGeometry[]) {
     for (let t = 0; t < triCount; t++) {
       const id = idCounter + t;
       const r = (id & 0xff) / 255;
-      const gv = ((id >> 8) & 0xff) / 255;
+      const g = ((id >> 8) & 0xff) / 255;
       const b = ((id >> 16) & 0xff) / 255;
       const o = t * 9;
-      idColors[o + 0] = r; idColors[o + 1] = gv; idColors[o + 2] = b;
-      idColors[o + 3] = r; idColors[o + 4] = gv; idColors[o + 5] = b;
-      idColors[o + 6] = r; idColors[o + 7] = gv; idColors[o + 8] = b;
+      idColors[o + 0] = r; idColors[o + 1] = g; idColors[o + 2] = b;
+      idColors[o + 3] = r; idColors[o + 4] = g; idColors[o + 5] = b;
+      idColors[o + 6] = r; idColors[o + 7] = g; idColors[o + 8] = b;
     }
     g.userData.idColors = idColors;
     idCounter += triCount;
