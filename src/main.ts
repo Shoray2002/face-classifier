@@ -2,7 +2,7 @@ import "./style.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
-import { classifyAndColor } from "./classify";
+import { classifyAndColor, idMaterial, loadIdColors } from "./classify";
 import { createMinimap } from "./minimap";
 
 document.querySelector(".dot.clp")?.parentElement?.remove();
@@ -136,6 +136,12 @@ const resetBtn = document.querySelector<HTMLButtonElement>("#reset-model")!;
 resetBtn.addEventListener("click", () => {
   fileInput.value = "";
   loadDefault();
+});
+
+let showIdPass = false;
+const showIdPassCheckbox = document.querySelector<HTMLInputElement>("#show-id-pass")!;
+showIdPassCheckbox.addEventListener("change", () => {
+  showIdPass = showIdPassCheckbox.checked;
 });
 
 type Axis = "x" | "y" | "z";
@@ -310,15 +316,23 @@ function tick() {
     p.threePlane.setFromNormalAndCoplanarPoint(p.normal, point);
   }
 
-  const result = classifyAndColor(geometries, camera, scene, renderer, clippingPlanes);
-  const total = result.visible + result.hidden;
-  statusEl.textContent = `visible: ${result.visible}   hidden: ${result.hidden}   (total ${total})`;
+  if (showIdPass) {
+    loadIdColors(geometries);
+    idMaterial.clippingPlanes = clippingPlanes;
+    scene.overrideMaterial = idMaterial;
+    statusEl.textContent = "";
+  } else {
+    const result = classifyAndColor(geometries, camera, scene, renderer, clippingPlanes);
+    const total = result.visible + result.hidden;
+    statusEl.textContent = `visible: ${result.visible}   hidden: ${result.hidden}   (total ${total})`;
+  }
 
   const w = window.innerWidth;
   const h = window.innerHeight;
   renderer.setViewport(0, 0, w, h);
   renderer.setScissorTest(false);
   renderer.render(scene, camera);
+  scene.overrideMaterial = null;
 
   const miniSize = Math.min(320, Math.floor(Math.min(w, h) * 0.36));
   minimap.update(planes, camera.position);

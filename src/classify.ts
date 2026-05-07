@@ -1,10 +1,18 @@
 import * as THREE from "three";
 
-const idMaterial = new THREE.MeshBasicMaterial({
+export const idMaterial = new THREE.MeshBasicMaterial({
   vertexColors: true,
   side: THREE.DoubleSide,
   toneMapped: false,
 });
+
+export function loadIdColors(geometries: THREE.BufferGeometry[]) {
+  for (const g of geometries) {
+    const colorAttr = g.getAttribute("color");
+    (colorAttr.array as Float32Array).set(g.userData.idColors as Float32Array);
+    colorAttr.needsUpdate = true;
+  }
+}
 
 const renderTarget = new THREE.WebGLRenderTarget(1, 1);
 
